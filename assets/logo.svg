@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="PortSide">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FF7A5C"/>
+      <stop offset="1" stop-color="#E5484D"/>
+    </linearGradient>
+  </defs>
+  <rect x="3.84" y="3.84" width="120.32" height="120.32" rx="29.44" fill="url(#bg)"/>
+  <rect x="27.52" y="30.08" width="72.96" height="25.6" rx="8.96" fill="#fff"/>
+  <rect x="27.52" y="72.32" width="72.96" height="25.6" rx="8.96" fill="#fff"/>
+  <circle cx="42.24" cy="42.88" r="5.38" fill="#E5484D"/>
+  <circle cx="42.24" cy="85.12" r="5.38" fill="#E5484D"/>
+</svg>

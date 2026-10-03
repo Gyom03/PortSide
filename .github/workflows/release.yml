@@ -1,0 +1,83 @@
+name: Release
+
+# Push a version tag to publish a release:
+#   git tag v0.2.0 && git push origin v0.2.0
+# The version embedded in the executable is taken from the tag.
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.arch }})
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-pc-windows-msvc
+            arch: x64
+          - target: aarch64-pc-windows-msvc
+            arch: arm64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Set version from tag
+        shell: pwsh
+        run: |
+          $version = '${{ github.ref_name }}'.TrimStart('v')
+          (Get-Content Cargo.toml -Raw) -replace '(?m)^version = "[^"]*"',"version = `"$version`"" |
+            Set-Content Cargo.toml -NoNewline -Encoding utf8
+          "VERSION=$version" >> $env:GITHUB_ENV
+
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $name = "portside-$env:VERSION-windows-${{ matrix.arch }}"
+          New-Item -ItemType Directory dist, $name | Out-Null
+          Copy-Item target/${{ matrix.target }}/release/portside.exe $name/portside.exe
+          Copy-Item README.md $name/
+          Copy-Item $name/portside.exe dist/$name.exe
+          Compress-Archive -Path $name/* -DestinationPath dist/$name.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.arch }}
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    name: Publish release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: dist-*
+          path: dist
+          merge-multiple: true
+
+      - name: Checksums
+        working-directory: dist
+        run: sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: PortSide ${{ github.ref_name }}
+          files: dist/*
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
